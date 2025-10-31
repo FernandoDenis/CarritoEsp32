@@ -6,20 +6,159 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-  :root { --bg:#0f172a; --card:#111827; --fg:#e5e7eb; --muted:#9ca3af; }
-  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Inter,Arial;background:var(--bg);color:var(--fg)}
-  header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#0b1220;border-bottom:1px solid #1f2937}
+  :root { --bg:#0f172a; --card:#111827; --fg:#e5e7eb; --muted:#9ca3af; --border:#1f2937; }
+  body{
+    margin:0;
+    font-family:system-ui,Segoe UI,Roboto,Inter,Arial;
+    background:var(--bg);
+    color:var(--fg)
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    background:#0b1220;
+    border-bottom:1px solid var(--border)
+  }
   header b{letter-spacing:.3px}
-  #wrap{display:grid;grid-template-columns:1.4fr .6fr;gap:12px;padding:12px}
-  #map{height:78vh;border-radius:14px;overflow:hidden;border:1px solid #1f2937}
-  .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:12px}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  button{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .pill{
+    display:inline-block;
+    padding:3px 8px;
+    border:1px solid #334155;
+    border-radius:999px;
+    color:#cbd5e1;
+    font-size:.8rem;
+  }
+
+  /* Layout principal */
+  #wrap{
+    display:grid;
+    grid-template-columns:1.2fr .8fr .6fr;
+    gap:12px;
+    padding:12px;
+  }
+  @media (max-width: 1280px){
+    #wrap{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width: 980px){
+    #wrap{grid-template-columns:1fr}
+  }
+
+  #map{
+    height:78vh;
+    border-radius:14px;
+    overflow:hidden;
+    border:1px solid var(--border)
+  }
+  @media (max-width: 980px){
+    #map{height:60vh}
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap
+  }
+
+  button{
+    background:#1e293b;
+    border:1px solid #334155;
+    color:#e2e8f0;
+    border-radius:10px;
+    padding:8px 10px;
+    cursor:pointer;
+    font-size:.9rem;
+    min-width:60px;
+    text-align:center;
+  }
   button:hover{background:#0b1220}
-  .pill{display:inline-block;padding:3px 8px;border:1px solid #334155;border-radius:999px;color:#cbd5e1}
+
   .muted{color:var(--muted);font-size:.9rem}
-  pre{white-space:pre-wrap;word-wrap:break-word;max-height:28vh;overflow:auto;background:#0b1220;border-radius:10px;padding:10px;border:1px solid #1f2937}
-  @media (max-width: 980px){ #wrap{grid-template-columns:1fr} #map{height:60vh} }
+
+  pre{
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    max-height:28vh;
+    overflow:auto;
+    background:#0b1220;
+    border-radius:10px;
+    padding:10px;
+    border:1px solid var(--border);
+    font-size:.8rem;
+    line-height:1.3rem;
+  }
+
+  /* Joystick grid */
+  .joy-wrap{
+    display:grid;
+    grid-template-columns:60px 60px 60px;
+    grid-template-rows:60px 60px 60px;
+    gap:8px;
+    justify-content:center;
+    align-items:center;
+    margin:8px auto;
+  }
+  .joy-empty{
+    visibility:hidden;
+  }
+  .joy-btn{
+    width:60px;
+    height:60px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:.8rem;
+    font-weight:500;
+  }
+  .joy-stop{
+    background:#7f1d1d;
+    border:1px solid #b91c1c;
+    color:#fff;
+    font-weight:bold;
+  }
+  .joy-stop:hover{
+    background:#450a0a;
+  }
+
+  .sectionTitle{
+    font-size:.9rem;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .tiny{
+    font-size:.75rem;
+    color:var(--muted);
+    font-weight:400;
+  }
+
+  .subSectionTitle{
+    font-size:.8rem;
+    font-weight:600;
+    color:#cbd5e1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:4px;
+  }
+  .subHint{
+    font-size:.7rem;
+    color:var(--muted);
+    font-weight:400;
+  }
+
 </style>
 </head>
 <body>
@@ -29,29 +168,87 @@
 </header>
 
 <div id="wrap">
+  <!-- MAPA -->
   <div id="map"></div>
 
+  <!-- TELEMETRÍA / COMANDOS DE SISTEMA -->
   <div class="card">
-    <div class="row" style="margin-bottom:8px">
+
+    <!-- Estado general -->
+    <div class="sectionTitle">
+      <span>Estado & Telemetría</span>
+      <span class="tiny" id="modeHint">modo: ?</span>
+    </div>
+
+    <!-- Botones modo general -->
+    <div class="row" style="margin-bottom:4px;flex-wrap:wrap">
       <button id="btnAuto">Modo AUTO</button>
       <button id="btnManual">Modo MANUAL</button>
       <button id="btnPing">PING</button>
+    </div>
+
+    <!-- Seguimiento de línea AUTO -->
+    <div class="subSectionTitle">
+      <span>Seguimiento de línea (AUTO)</span>
+      <span class="subHint">AUTO_START / AUTO_STOP</span>
+    </div>
+    <div class="row" style="margin-bottom:8px;flex-wrap:wrap">
+      <button id="btnAutoStart">Iniciar AUTO</button>
+      <button id="btnAutoStop">Detener AUTO</button>
+    </div>
+
+    <!-- Rate de telemetría -->
+    <div class="subSectionTitle">
+      <span>Frecuencia de telemetría</span>
+      <span class="subHint">SET_RATE</span>
+    </div>
+    <div class="row" style="margin-bottom:8px;flex-wrap:wrap">
       <button data-rate="1000">Rate 1s</button>
       <button data-rate="2000">Rate 2s</button>
       <button data-rate="5000">Rate 5s</button>
     </div>
+
+    <!-- Info dinámica -->
     <div class="muted" id="info">Esperando telemetría…</div>
     <pre id="log"></pre>
   </div>
+
+  <!-- CONTROL MANUAL -->
+  <div class="card">
+    <div class="sectionTitle">
+      <span>Control Manual</span>
+      <span class="tiny">W/A/S/D ←→↑↓ | SPACE = STOP</span>
+    </div>
+
+    <!-- Joystick visual -->
+    <div class="joy-wrap">
+      <div class="joy-empty"></div>
+      <button class="joy-btn" id="joyUp">↑</button>
+      <div class="joy-empty"></div>
+
+      <button class="joy-btn" id="joyLeft">←</button>
+      <button class="joy-btn joy-stop" id="joyStop">■</button>
+      <button class="joy-btn" id="joyRight">→</button>
+
+      <div class="joy-empty"></div>
+      <button class="joy-btn" id="joyDown">↓</button>
+      <div class="joy-empty"></div>
+    </div>
+
+    <div class="muted" style="text-align:center">
+      Haz clic o usa el teclado para mover el robot en modo MANUAL.
+    </div>
+  </div>
+
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
   // === Configura tus topics/broker ===
-  const TOPIC_UP   = 'iot/telemetry/up';   // publicado por tu gateway
-  const TOPIC_DOWN = 'iot/commands/down';  // comandos hacia tu gateway
-  const MQTT_URL   = 'wss://test.mosquitto.org:8081/mqtt'; // o ws://<tu_ip>:<puerto>/mqtt
+  const TOPIC_UP   = 'iot/telemetry/up';   // publicado por el gateway
+  const TOPIC_DOWN = 'iot/commands/down';  // comandos hacia el gateway
+  const MQTT_URL   = 'wss://test.mosquitto.org:8081/mqtt';
 
   // === Mapa ===
   const map = L.map('map').setView([19.24, -103.45], 15);
@@ -61,50 +258,141 @@
   const track  = L.polyline([], {weight:4}).addTo(map);
 
   // === UI helpers ===
-  const $status = document.getElementById('status');
-  const $log    = document.getElementById('log');
-  const $info   = document.getElementById('info');
-  function log(s){ $log.textContent = (s + '\n' + $log.textContent).slice(0, 8000); }
+  const $status   = document.getElementById('status');
+  const $log      = document.getElementById('log');
+  const $info     = document.getElementById('info');
+  const $modeHint = document.getElementById('modeHint');
 
-  // === MQTT ===
-  const client = mqtt.connect(MQTT_URL, {keepalive:30, reconnectPeriod:2000});
+  function log(s){
+    $log.textContent = (s + '\n' + $log.textContent).slice(0, 8000);
+  }
+
+  function updateModeHint(mode){
+    $modeHint.textContent = 'modo: ' + mode;
+  }
+
+  // === MQTT cliente ===
+  const client = mqtt.connect(MQTT_URL, {
+    keepalive:30,
+    reconnectPeriod:2000,
+  });
+
   client.on('connect', () => {
     $status.textContent = 'MQTT: conectado';
     $status.style.borderColor = '#16a34a';
     client.subscribe(TOPIC_UP);
     log('[MQTT] Conectado. Suscrito a ' + TOPIC_UP);
   });
-  client.on('reconnect', () => { $status.textContent='MQTT: reconectando…'; });
-  client.on('close', () => { $status.textContent='MQTT: desconectado'; $status.style.borderColor='#334155'; });
-  client.on('error', (e) => log('[MQTT error] ' + e.message));
 
+  client.on('reconnect', () => {
+    $status.textContent='MQTT: reconectando…';
+  });
+
+  client.on('close', () => {
+    $status.textContent='MQTT: desconectado';
+    $status.style.borderColor='#334155';
+  });
+
+  client.on('error', (e) => {
+    log('[MQTT error] ' + e.message);
+  });
+
+  // Mensajes entrantes (telemetría del robot vía gateway)
   client.on('message', (_, payload) => {
     try{
       const msg = JSON.parse(payload.toString());
       const [lon, lat] = msg?.pos?.coordinates || [null, null];
+
+      // Actualizar mapa/ruta
       if(lat!=null && lon!=null){
         marker.setLatLng([lat, lon]);
         track.addLatLng([lat, lon]);
-        $info.textContent = `lat=${lat.toFixed(6)}  lon=${lon.toFixed(6)}  alt=${(msg.alt??0).toFixed(1)}  spd=${(msg.spd??0).toFixed(2)}  mode=${msg.mode}  sats=${msg.sats}`;
-        // map.panTo([lat,lon]); // descomenta si quieres que siga la posición
+
+        // construimos info con más sensores
+        const dist = (msg.dist_cm ?? 0).toFixed(1);
+        const obs  = msg.obs ? 'YES' : 'NO';
+
+        $info.textContent =
+          `lat=${lat.toFixed(6)}  lon=${lon.toFixed(6)}  `+
+          `alt=${(msg.alt??0).toFixed(1)}  spd=${(msg.spd??0).toFixed(2)}  `+
+          `mode=${msg.mode}  sats=${msg.sats}  `+
+          `dist=${dist}cm  obs=${obs}`;
+
+        updateModeHint(msg.mode || '?');
+        // map.panTo([lat,lon]); // si quieres que la vista siga al robot, descomenta
       }
+
       log('[UP] ' + JSON.stringify(msg));
     }catch(e){
       log('[Parse] ' + e.message);
     }
   });
 
-  // === Envío de comandos ===
+  // === util para publicar comandos al robot (pasando por el gateway) ===
   function sendCmd(obj){
     const s = JSON.stringify(obj);
     client.publish(TOPIC_DOWN, s);
     log('[DOWN] ' + s);
   }
-  document.getElementById('btnAuto').onclick   = () => sendCmd({cmd:'SET_MODE', mode:'AUTO'});
-  document.getElementById('btnManual').onclick = () => sendCmd({cmd:'SET_MODE', mode:'MANUAL'});
-  document.getElementById('btnPing').onclick   = () => sendCmd({cmd:'PING'});
+
+  // --- Botones de modo general ---
+  document.getElementById('btnAuto').onclick   = () => {
+    // Pone MODE="AUTO", pero el robot se queda quieto hasta que le des AUTO_START
+    sendCmd({cmd:'SET_MODE', mode:'AUTO'});
+  };
+
+  document.getElementById('btnManual').onclick = () => {
+    // Sale de automático y vuelve a aceptar DRIVE
+    sendCmd({cmd:'SET_MODE', mode:'MANUAL'});
+  };
+
+  document.getElementById('btnPing').onclick   = () => {
+    sendCmd({cmd:'PING'});
+  };
+
+  // --- AUTO follow line ---
+  document.getElementById('btnAutoStart').onclick = () => {
+    // Robot ya debe estar en MODE="AUTO"
+    // Esto activa autoActive=true y empieza a seguir la línea
+    sendCmd({cmd:'AUTO_START'});
+  };
+
+  document.getElementById('btnAutoStop').onclick = () => {
+    // Mantiene MODE="AUTO" pero frena y deja de moverse
+    sendCmd({cmd:'AUTO_STOP'});
+  };
+
+  // --- Cambiar tasa telemetría ---
   document.querySelectorAll('button[data-rate]').forEach(b=>{
-    b.onclick = ()=> sendCmd({cmd:'SET_RATE', period_ms: parseInt(b.dataset.rate,10)});
+    b.onclick = ()=> {
+      sendCmd({cmd:'SET_RATE', period_ms: parseInt(b.dataset.rate,10)});
+    };
+  });
+
+  // === Control Manual: DRIVE ===
+  function sendDrive(dir){
+    // Esto forzará MODE="MANUAL" dentro del robot según tu firmware
+    sendCmd({cmd:'DRIVE', dir});
+  }
+
+  // Click joystick
+  document.getElementById('joyUp').onclick    = () => sendDrive('FWD');
+  document.getElementById('joyDown').onclick  = () => sendDrive('BACK');
+  document.getElementById('joyLeft').onclick  = () => sendDrive('LEFT');
+  document.getElementById('joyRight').onclick = () => sendDrive('RIGHT');
+  document.getElementById('joyStop').onclick  = () => sendDrive('STOP');
+
+  // Teclado WASD / Flechas / SPACE
+  window.addEventListener('keydown', (ev)=>{
+    const k = ev.key.toLowerCase();
+    if(k==='w' || ev.key==='ArrowUp')         { sendDrive('FWD'); }
+    else if(k==='s' || ev.key==='ArrowDown')  { sendDrive('BACK'); }
+    else if(k==='a' || ev.key==='ArrowLeft')  { sendDrive('LEFT'); }
+    else if(k==='d' || ev.key==='ArrowRight') { sendDrive('RIGHT'); }
+    else if(ev.key===' '){
+      sendDrive('STOP');
+      ev.preventDefault();
+    }
   });
 </script>
 </body>
